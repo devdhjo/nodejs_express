@@ -3,6 +3,7 @@ const app = express()
 const port = 3000
 var fs = require('fs');
 var path = require('path');
+var qs = require('querystring');
 var sanitizeHTML = require('sanitize-html');
 var template = require('./lib/template');
 
@@ -39,6 +40,36 @@ app.get('/page/:pageId', function(request, response) {
          </form>`
         );
       response.send(html);
+    })
+  })
+});
+
+app.get('/create', function(request, response) {
+  fs.readdir('./data', function(error, filelist) {
+    var title = 'WEB - create';
+    var list = template.list(filelist);
+    var html = template.HTML(title, list,
+      `<form action="/create_process" method="post">
+         <p><input type="text" name="title" placeholder="title"></p>
+         <p><textarea name="description" placeholder="description"></textarea></p>
+         <p><input type="submit"></p>
+       </form>
+      `, '');
+    response.send(html);
+  })
+});
+
+app.post('/create_process', function(request, response) {
+  var body = '';
+  request.on('data', function(data) {
+    body = body + data;
+  })
+  request.on('end', function() {
+    var post = qs.parse(body);
+    var title = post.title;
+    var description = post.description;
+    fs.writeFile(`data/${title}`, description, 'utf8', function(error) {
+      response.redirect(302, `/page/${title}`);
     })
   })
 });
